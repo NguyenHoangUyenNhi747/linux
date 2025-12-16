@@ -41,6 +41,9 @@ def receive_message():
 				if user in online_user:
 				    online_user.pop(user)
 				print(f"\n>> {user} left the chat")
+			elif msg.startswith("ALIVE:"):
+			    user = msg.split(":",1)[1]
+			    online_user[user] = time.time()
 			else:
 				print (f"\n>> {msg}")
 		except Exception as e:
@@ -49,9 +52,23 @@ def receive_message():
 def heartbeat():
 	while True:
 		time.sleep(5)
+		send_message(f"ALIVE:{USERNAME}")
+		
+def check_timeout():
+    while True:
+        time.sleep(5)
+        now = time.time()
+        to_remove =[]
+        for user, last_time in online_user.items():
+            if now - last_time >10:
+                to_remove.append(user)
+        for user in to_remove:
+            online_user.pop(user)
+            print(f"\n>> {user} seems to have left (interrupt)")
 
 threading.Thread(target=receive_message, daemon=True).start()
 threading.Thread(target=heartbeat, daemon=True).start()
+threading.Thread(target=check_timeout, daemon=True).start()
 
 send_message(f"JOIN:{USERNAME}")
 
@@ -68,4 +85,3 @@ try:
 		    send_message(f"{USERNAME}: {msg}")
 except KeyboardInterrupt:
 	send_message(f"LEAVE:{USERNAME}")
-
